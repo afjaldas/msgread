@@ -305,7 +305,7 @@ public class FileLogger implements MeasurementListener {
       builder.append(navigationMessage.getSubmessageId());
       byte[] data = navigationMessage.getData();
       //write logic for selecting only specific data  -- afal
-      //code changes
+      //code changes..
       for (byte word : data) {
         builder.append(RECORD_DELIMITER);
         builder.append(word);
