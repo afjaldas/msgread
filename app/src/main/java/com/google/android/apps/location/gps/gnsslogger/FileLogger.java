@@ -304,6 +304,7 @@ public class FileLogger implements MeasurementListener {
       builder.append(RECORD_DELIMITER);
       builder.append(navigationMessage.getSubmessageId());
       byte[] data = navigationMessage.getData();
+      Log.v("das", String.valueOf(data));
       //write logic for selecting only specific data  -- afal
       //code changes..
       for (byte word : data) {
