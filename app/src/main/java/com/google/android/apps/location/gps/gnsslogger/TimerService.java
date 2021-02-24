@@ -17,13 +17,22 @@
 package com.google.android.apps.location.gps.gnsslogger;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Binder;
+import android.os.Build;
 import android.os.CountDownTimer;
 import android.os.IBinder;
+import android.support.annotation.RequiresApi;
+import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import java.util.concurrent.TimeUnit;
+
+import static android.support.v4.app.NotificationCompat.PRIORITY_MIN;
 
 /** A {@link Service} to be bound to that exposes a timer. */
 public class TimerService extends Service {
@@ -64,9 +73,38 @@ public class TimerService extends Service {
 
   @Override
   public IBinder onBind(Intent intent) {
-    Notification notification = new Notification();
+
+    String channelId ="";
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+     channelId= createNotificationChannel("my_service", "My Background Service");
+    } else {
+      // If earlier version channel ID is not used
+      // https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#NotificationCompat.Builder(android.content.Context)
+
+    }
+
+    NotificationCompat.Builder notificationBuilder =
+            new NotificationCompat.Builder(this, channelId );
+    Notification notification = notificationBuilder.setOngoing(true)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setPriority(PRIORITY_MIN)
+            .setCategory(Notification.CATEGORY_SERVICE)
+            .build();
+
+
     startForeground(NOTIFICATION_ID, notification);
     return mBinder;
+  }
+
+  @RequiresApi(Build.VERSION_CODES.O)
+  private String createNotificationChannel(String channelId, String channelName ){
+    NotificationChannel chan = new NotificationChannel(channelId,
+            channelName, NotificationManager.IMPORTANCE_NONE);
+    chan.setLightColor(Color.BLUE);
+    chan.setLockscreenVisibility(Notification.VISIBILITY_PRIVATE);
+    NotificationManager service = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+    service.createNotificationChannel(chan);
+    return channelId;
   }
 
   @Override

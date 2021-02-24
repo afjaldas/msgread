@@ -30,6 +30,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.SystemClock;
 import android.support.v4.BuildConfig;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.content.FileProvider;
 import android.util.Log;
 import android.widget.Toast;
@@ -44,6 +45,9 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+
+import static android.location.GnssNavigationMessage.STATUS_PARITY_PASSED;
+import static android.location.GnssNavigationMessage.STATUS_PARITY_REBUILT;
 
 /**
  * A GNSS logger to store information to a file.
@@ -83,12 +87,12 @@ public class FileLogger implements MeasurementListener {
   /**
    * Start a new file logging process.
    */
-  public void startNewLog() {
+  public void startNewLog(Context context) {
     synchronized (mFileLock) {
       File baseDirectory;
       String state = Environment.getExternalStorageState();
       if (Environment.MEDIA_MOUNTED.equals(state)) {
-        baseDirectory = new File(Environment.getExternalStorageDirectory(), FILE_PREFIX);
+        baseDirectory = new File(ContextCompat.getExternalFilesDirs(context,null)[0], FILE_PREFIX);
         baseDirectory.mkdirs();
       } else if (Environment.MEDIA_MOUNTED_READ_ONLY.equals(state)) {
         logError("Cannot write to external storage.");
@@ -105,6 +109,9 @@ public class FileLogger implements MeasurementListener {
       String currentFilePath = currentFile.getAbsolutePath();
       BufferedWriter currentFileWriter;
       try {
+      if(!currentFile.exists()) {
+        currentFile.createNewFile();
+      }
         currentFileWriter = new BufferedWriter(new FileWriter(currentFile));
       } catch (IOException e) {
         logException("Could not open file: " + currentFilePath, e);
@@ -297,26 +304,68 @@ public class FileLogger implements MeasurementListener {
       builder.append(navigationMessage.getType());
       builder.append(RECORD_DELIMITER);
 
-      int status = navigationMessage.getStatus();
-      builder.append(status);
-      builder.append(RECORD_DELIMITER);
-      builder.append(navigationMessage.getMessageId());
-      builder.append(RECORD_DELIMITER);
-      builder.append(navigationMessage.getSubmessageId());
-      byte[] data = navigationMessage.getData();
-      Log.v("das", String.valueOf(data));
+      if (navigationMessage.getType()==GnssNavigationMessage.TYPE_IRN_L5CA)
+      {
+        //only navic messages will be processed here
+        if ((navigationMessage.getSvid()==1)||(navigationMessage.getSvid()==7))
+        {
+          //only 1a and 1g messages are processed here
+          if ((navigationMessage.getStatus() == STATUS_PARITY_PASSED) || (navigationMessage.getStatus()== STATUS_PARITY_REBUILT))
+          {
+            //if parity passed only then we will go ahead in writing to files otherwise skip
+            //20 pfz 21 warning highwave cyclone tsunami --message ids
+
+            if (navigationMessage.getMessageId()==20)
+            {
+              // PROCESS PFZ INFO
+              int status = navigationMessage.getStatus();
+              builder.append(status);
+              builder.append(RECORD_DELIMITER);
+              builder.append(navigationMessage.getMessageId());
+              builder.append(RECORD_DELIMITER);
+              builder.append(navigationMessage.getSubmessageId());
+              byte[] data = navigationMessage.getData();
+              for (byte word : data) {
+                builder.append(RECORD_DELIMITER);
+                builder.append(word);
+              }
+              try {
+                mFileWriter.write(builder.toString());
+                mFileWriter.newLine();
+              } catch (IOException e) {
+                logException(ERROR_WRITING_FILE, e);
+              }
+            }
+
+            if (navigationMessage.getMessageId()==21)
+            {
+              // PROCESS FOR WARNIGN ALERTS
+              int status = navigationMessage.getStatus();
+              builder.append(status);
+              builder.append(RECORD_DELIMITER);
+              builder.append(navigationMessage.getMessageId());
+              builder.append(RECORD_DELIMITER);
+              builder.append(navigationMessage.getSubmessageId());
+              byte[] data = navigationMessage.getData();
+              for (byte word : data) {
+                builder.append(RECORD_DELIMITER);
+                builder.append(word);
+              }
+              try {
+                mFileWriter.write(builder.toString());
+                mFileWriter.newLine();
+              } catch (IOException e) {
+                logException(ERROR_WRITING_FILE, e);
+              }
+            }
+          }
+        }
+
+      }
+      //Log.v("das", String.valueOf(data));
       //write logic for selecting only specific data  -- afal
       //code changes..
-      for (byte word : data) {
-        builder.append(RECORD_DELIMITER);
-        builder.append(word);
-      }
-      try {
-        mFileWriter.write(builder.toString());
-        mFileWriter.newLine();
-      } catch (IOException e) {
-        logException(ERROR_WRITING_FILE, e);
-      }
+
     }
   }
 

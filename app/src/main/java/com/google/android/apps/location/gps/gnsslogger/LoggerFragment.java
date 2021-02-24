@@ -18,6 +18,7 @@ package com.google.android.apps.location.gps.gnsslogger;
 
 import static com.google.common.base.Preconditions.checkArgument;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
@@ -27,9 +28,12 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
+import android.support.annotation.Nullable;
+import android.support.v13.app.ActivityCompat;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.Editable;
 import android.text.SpannableStringBuilder;
@@ -126,6 +130,44 @@ public class LoggerFragment extends Fragment implements TimerListener {
   }
 
   @Override
+  public void onCreate(@Nullable Bundle savedInstanceState) {
+    super.onCreate(savedInstanceState);
+  }
+
+  @Override
+  public void onRequestPermissionsResult(int requestCode,
+                                         String permissions[], int[] grantResults) {
+    switch (requestCode) {
+      case 1: {
+
+        // If request is cancelled, the result arrays are empty.
+        if (grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+
+          // permission was granted, yay! Do the
+          // contacts-related task you need to do.
+//          enableOptions(false /* start */);
+//          Toast.makeText(getContext(), R.string.start_message, Toast.LENGTH_LONG).show();
+//          mFileLogger.startNewLog();
+//
+//          if (!mTimerValues.isZero() && (mTimerService != null)) {
+//            mTimerService.startTimer();
+//          }
+        } else {
+
+          // permission denied, boo! Disable the
+          // functionality that depends on this permission.
+          Toast.makeText(getActivity(), "Permission denied to read your External storage", Toast.LENGTH_SHORT).show();
+        }
+        return;
+      }
+
+      // other 'case' lines to check for other
+      // permissions this app might request
+    }
+  }
+
+  @Override
   public View onCreateView(
       LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
     View newView = inflater.inflate(R.layout.fragment_log, container, false /* attachToRoot */);
@@ -186,9 +228,12 @@ public class LoggerFragment extends Fragment implements TimerListener {
         new OnClickListener() {
           @Override
           public void onClick(View view) {
+//                ActivityCompat.requestPermissions(getActivity(),
+//            new String[]{Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE},
+//            1);
             enableOptions(false /* start */);
             Toast.makeText(getContext(), R.string.start_message, Toast.LENGTH_LONG).show();
-            mFileLogger.startNewLog();
+            mFileLogger.startNewLog(getContext().getApplicationContext());
 
             if (!mTimerValues.isZero() && (mTimerService != null)) {
               mTimerService.startTimer();

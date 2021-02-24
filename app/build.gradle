@@ -1,12 +1,12 @@
 apply plugin: 'com.android.application'
 
 android {
-    compileSdkVersion 26
-    buildToolsVersion '26.0.0'
+    compileSdkVersion 30
+    buildToolsVersion '30.0.3'
     defaultConfig {
         applicationId "com.google.android.apps.location.gps.gnsslogger"
-        minSdkVersion 24
-        targetSdkVersion 25
+        minSdkVersion 30
+        targetSdkVersion 30
         versionCode 1
         versionName "2.0.0.0"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
